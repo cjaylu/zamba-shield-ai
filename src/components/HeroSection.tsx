@@ -1,8 +1,35 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Shield, AlertTriangle, CheckCircle, Users } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 const HeroSection = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleDashboardClick = () => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    toast({
+      title: "Dashboard Access",
+      description: "Redirecting to your secure dashboard...",
+    });
+    // Add dashboard navigation logic here
+  };
+
+  const handleLearnMore = () => {
+    toast({
+      title: "Documentation",
+      description: "Opening ZambaShield documentation...",
+    });
+    // Add documentation link logic here
+  };
+
   return (
     <section className="relative py-16 px-6 bg-gradient-hero text-primary-foreground overflow-hidden">
       {/* Background pattern */}
@@ -27,11 +54,11 @@ const HeroSection = () => {
         </p>
         
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-          <Button variant="hero" size="lg" className="shadow-glow">
+          <Button variant="hero" size="lg" className="shadow-glow" onClick={handleDashboardClick}>
             <Shield className="mr-2 h-5 w-5" />
-            View Dashboard
+            {user ? "View Dashboard" : "Sign In to Dashboard"}
           </Button>
-          <Button variant="outline" size="lg" className="bg-primary-foreground/10 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/20">
+          <Button variant="outline" size="lg" className="bg-primary-foreground/10 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/20" onClick={handleLearnMore}>
             Learn More
           </Button>
         </div>

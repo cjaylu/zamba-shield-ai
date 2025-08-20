@@ -5,6 +5,9 @@ import ThreatChart from "@/components/ThreatChart";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Shield, 
   Activity, 
@@ -19,6 +22,35 @@ import {
 } from "lucide-react";
 
 const Index = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleFeatureClick = (featureName: string) => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    toast({
+      title: `${featureName} Feature`,
+      description: "This feature will be available in the next update.",
+    });
+  };
+
+  const handleCTAClick = (action: string) => {
+    if (action === "demo") {
+      toast({
+        title: "Demo Request",
+        description: "Thank you for your interest! We'll contact you soon.",
+      });
+    } else {
+      toast({
+        title: "Documentation",
+        description: "Opening technical documentation...",
+      });
+    }
+  };
+
   // Sample data for charts
   const threatTrendData = [
     { time: "00:00", threats: 12 },
@@ -127,7 +159,7 @@ const Index = () => {
                   Advanced NLP and ML algorithms detect phishing emails with 90%+ accuracy, 
                   automatically quarantining malicious messages.
                 </p>
-                <Button variant="outline" className="mt-4 w-full">
+                <Button variant="outline" className="mt-4 w-full" onClick={() => handleFeatureClick("Email Logs")}>
                   View Email Logs
                 </Button>
               </CardContent>
@@ -145,7 +177,7 @@ const Index = () => {
                   Multi-language support for English, Bemba, Nyanja, and Tonga. 
                   Detects mobile money scams and lottery frauds.
                 </p>
-                <Button variant="outline" className="mt-4 w-full">
+                <Button variant="outline" className="mt-4 w-full" onClick={() => handleFeatureClick("SMS Dashboard")}>
                   SMS Dashboard
                 </Button>
               </CardContent>
@@ -163,7 +195,7 @@ const Index = () => {
                   Real-time monitoring of login attempts with automatic IP blocking 
                   and administrator alerts for suspicious activity.
                 </p>
-                <Button variant="outline" className="mt-4 w-full">
+                <Button variant="outline" className="mt-4 w-full" onClick={() => handleFeatureClick("Security Logs")}>
                   Security Logs
                 </Button>
               </CardContent>
@@ -181,7 +213,7 @@ const Index = () => {
                   Interactive cybersecurity training with phishing simulations, 
                   quizzes, and gamified challenges to boost awareness.
                 </p>
-                <Button variant="outline" className="mt-4 w-full">
+                <Button variant="outline" className="mt-4 w-full" onClick={() => handleFeatureClick("Training Modules")}>
                   Start Training
                 </Button>
               </CardContent>
@@ -199,7 +231,7 @@ const Index = () => {
                   Optimized for low-spec servers with offline-first capabilities. 
                   Designed specifically for Zambian cybersecurity challenges.
                 </p>
-                <Button variant="outline" className="mt-4 w-full">
+                <Button variant="outline" className="mt-4 w-full" onClick={() => handleFeatureClick("Deployment Guide")}>
                   Deployment Guide
                 </Button>
               </CardContent>
@@ -217,7 +249,7 @@ const Index = () => {
                   Role-based access control for administrators, security officers, 
                   and end users with appropriate permission levels.
                 </p>
-                <Button variant="outline" className="mt-4 w-full">
+                <Button variant="outline" className="mt-4 w-full" onClick={() => handleFeatureClick("User Management")}>
                   Manage Users
                 </Button>
               </CardContent>
@@ -232,11 +264,11 @@ const Index = () => {
             Join the pilot program and help us build a safer digital future for Zambian institutions.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button variant="hero" size="lg">
+            <Button variant="hero" size="lg" onClick={() => handleCTAClick("demo")}>
               <Shield className="mr-2 h-5 w-5" />
               Request Demo
             </Button>
-            <Button variant="outline" size="lg" className="bg-primary-foreground/10 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/20">
+            <Button variant="outline" size="lg" className="bg-primary-foreground/10 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/20" onClick={() => handleCTAClick("docs")}>
               View Documentation
             </Button>
           </div>
