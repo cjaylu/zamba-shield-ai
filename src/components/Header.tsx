@@ -25,11 +25,7 @@ const Header = () => {
       navigate("/auth");
       return;
     }
-    // Add navigation logic here when routes are implemented
-    toast({
-      title: "Feature Coming Soon",
-      description: "This feature will be available in the next update.",
-    });
+    navigate(path);
   };
 
   return (
