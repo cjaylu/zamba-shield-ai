@@ -1,12 +1,72 @@
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Header from "@/components/Header";
 import ThreatChart from "@/components/ThreatChart";
-import { FileText, Download, Calendar, BarChart3, PieChart } from "lucide-react";
+import { FileText, Download, Calendar, BarChart3 } from "lucide-react";
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 const Reports = () => {
+  const [reportType, setReportType] = useState('');
+  const [timePeriod, setTimePeriod] = useState('');
+  const [format, setFormat] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const generateReport = async () => {
+    if (!reportType || !timePeriod || !format) {
+      toast({
+        title: "Missing Information",
+        description: "Please select report type, time period, and format.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-report', {
+        body: { reportType, timePeriod, format }
+      });
+
+      if (error) throw error;
+
+      if (format === 'pdf') {
+        toast({
+          title: "Report Generated",
+          description: "Your PDF report has been generated successfully.",
+        });
+      } else {
+        // Create and download text file
+        const blob = new Blob([data], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `security-report-${Date.now()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        toast({
+          title: "Report Downloaded",
+          description: "Your report has been downloaded successfully.",
+        });
+      }
+    } catch (error) {
+      console.error('Error generating report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate report. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
   const monthlyData = [
     { name: "Jan", threats: 45, emails: 1200, sms: 89, blocked: 134 },
     { name: "Feb", threats: 52, emails: 1100, sms: 76, blocked: 128 },
@@ -78,7 +138,7 @@ const Reports = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Select>
+              <Select value={reportType} onValueChange={setReportType}>
                 <SelectTrigger>
                   <SelectValue placeholder="Report Type" />
                 </SelectTrigger>
@@ -89,7 +149,7 @@ const Reports = () => {
                   <SelectItem value="compliance">Compliance Report</SelectItem>
                 </SelectContent>
               </Select>
-              <Select>
+              <Select value={timePeriod} onValueChange={setTimePeriod}>
                 <SelectTrigger>
                   <SelectValue placeholder="Time Period" />
                 </SelectTrigger>
@@ -100,17 +160,23 @@ const Reports = () => {
                   <SelectItem value="year">Last Year</SelectItem>
                 </SelectContent>
               </Select>
-              <Select>
+              <Select value={format} onValueChange={setFormat}>
                 <SelectTrigger>
                   <SelectValue placeholder="Format" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="pdf">PDF</SelectItem>
-                  <SelectItem value="excel">Excel</SelectItem>
+                  <SelectItem value="txt">Text File</SelectItem>
                   <SelectItem value="csv">CSV</SelectItem>
                 </SelectContent>
               </Select>
-              <Button className="w-full">Generate Report</Button>
+              <Button 
+                className="w-full" 
+                onClick={generateReport}
+                disabled={isGenerating}
+              >
+                {isGenerating ? 'Generating...' : 'Generate Report'}
+              </Button>
             </div>
           </CardContent>
         </Card>

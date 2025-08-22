@@ -3,56 +3,50 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import Header from "@/components/Header";
-import { BookOpen, Trophy, Target, Play, CheckCircle, Clock } from "lucide-react";
+import { TrainingModule } from "@/components/TrainingModule";
+import { BookOpen, Trophy, Target, CheckCircle } from "lucide-react";
+import { useTraining } from "@/hooks/useTraining";
 
 const Training = () => {
+  const { progress, loading } = useTraining();
+  
   const modules = [
     {
-      id: 1,
+      id: "phishing-email-recognition",
       title: "Phishing Email Recognition",
       description: "Learn to identify and avoid phishing emails",
-      progress: 100,
-      status: "completed",
       duration: "15 min",
       difficulty: "Beginner",
       points: 50
     },
     {
-      id: 2,
+      id: "sms-scam-awareness",
       title: "SMS Scam Awareness",
       description: "Recognize common SMS scams in Zambia",
-      progress: 60,
-      status: "in-progress",
       duration: "20 min",
       difficulty: "Beginner",
       points: 75
     },
     {
-      id: 3,
+      id: "password-security-best-practices",
       title: "Password Security Best Practices",
       description: "Create and manage strong passwords",
-      progress: 0,
-      status: "not-started",
       duration: "25 min",
       difficulty: "Intermediate",
       points: 100
     },
     {
-      id: 4,
+      id: "social-engineering-defense",
       title: "Social Engineering Defense",
       description: "Protect against social engineering attacks",
-      progress: 0,
-      status: "not-started",
       duration: "30 min",
       difficulty: "Advanced",
       points: 125
     },
     {
-      id: 5,
+      id: "mobile-money-security",
       title: "Mobile Money Security",
       description: "Secure your mobile money transactions",
-      progress: 0,
-      status: "not-started",
       duration: "18 min",
       difficulty: "Beginner",
       points: 60
@@ -66,22 +60,27 @@ const Training = () => {
     { name: "Security Champion", description: "Complete all training modules", unlocked: false }
   ];
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "completed": return <CheckCircle className="h-4 w-4 text-success" />;
-      case "in-progress": return <Clock className="h-4 w-4 text-warning" />;
-      default: return <Play className="h-4 w-4 text-muted-foreground" />;
+  // Calculate dynamic stats from actual progress
+  const completedModules = progress.filter(p => p.status === 'completed').length;
+  const totalPoints = progress.reduce((sum, p) => {
+    if (p.status === 'completed') {
+      const module = modules.find(m => m.id === p.module_id);
+      return sum + (module?.points || 0);
     }
-  };
+    return sum;
+  }, 0);
+  const overallProgress = Math.round((completedModules / modules.length) * 100);
 
-  const getDifficultyVariant = (difficulty: string) => {
-    switch (difficulty) {
-      case "Beginner": return "outline";
-      case "Intermediate": return "secondary";
-      case "Advanced": return "destructive";
-      default: return "outline";
-    }
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto py-8 px-4">
+          <div className="text-center">Loading training data...</div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -96,7 +95,7 @@ const Training = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-2xl">310</CardTitle>
+              <CardTitle className="text-2xl">{totalPoints}</CardTitle>
               <CardDescription className="flex items-center gap-2">
                 <Trophy className="h-4 w-4" />
                 Total Points
@@ -105,7 +104,7 @@ const Training = () => {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-2xl">2/5</CardTitle>
+              <CardTitle className="text-2xl">{completedModules}/{modules.length}</CardTitle>
               <CardDescription className="flex items-center gap-2">
                 <BookOpen className="h-4 w-4" />
                 Modules Completed
@@ -114,7 +113,7 @@ const Training = () => {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-2xl">32%</CardTitle>
+              <CardTitle className="text-2xl">{overallProgress}%</CardTitle>
               <CardDescription className="flex items-center gap-2">
                 <Target className="h-4 w-4" />
                 Overall Progress
@@ -137,36 +136,15 @@ const Training = () => {
               <CardContent>
                 <div className="space-y-4">
                   {modules.map((module) => (
-                    <div key={module.id} className="border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            {getStatusIcon(module.status)}
-                            <h3 className="font-semibold">{module.title}</h3>
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-2">{module.description}</p>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            <span>{module.duration}</span>
-                            <Badge variant={getDifficultyVariant(module.difficulty)} className="text-xs">
-                              {module.difficulty}
-                            </Badge>
-                            <span>{module.points} points</span>
-                          </div>
-                        </div>
-                        <Button variant={module.status === "completed" ? "outline" : "default"} size="sm">
-                          {module.status === "completed" ? "Review" : module.status === "in-progress" ? "Continue" : "Start"}
-                        </Button>
-                      </div>
-                      {module.progress > 0 && (
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-xs">
-                            <span>Progress</span>
-                            <span>{module.progress}%</span>
-                          </div>
-                          <Progress value={module.progress} className="h-2" />
-                        </div>
-                      )}
-                    </div>
+                    <TrainingModule
+                      key={module.id}
+                      id={module.id}
+                      title={module.title}
+                      description={module.description}
+                      duration={module.duration}
+                      difficulty={module.difficulty}
+                      points={module.points}
+                    />
                   ))}
                 </div>
               </CardContent>

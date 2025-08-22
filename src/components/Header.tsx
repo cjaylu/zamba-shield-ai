@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Bell, User, Settings, LogOut } from "lucide-react";
+import { Shield, User, Settings, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { NotificationBell } from "@/components/NotificationBell";
 import zambaShieldLogo from "@/assets/zamba-shield-logo.png";
 
 const Header = () => {
@@ -60,12 +61,7 @@ const Header = () => {
         <div className="flex items-center space-x-2">
           {user ? (
             <>
-              <Button variant="ghost" size="icon" className="relative" onClick={() => handleNavigation("/notifications")}>
-                <Bell className="h-4 w-4" />
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs bg-destructive text-destructive-foreground">
-                  3
-                </Badge>
-              </Button>
+              <NotificationBell />
               <Button variant="ghost" size="icon" onClick={() => handleNavigation("/settings")}>
                 <Settings className="h-4 w-4" />
               </Button>
