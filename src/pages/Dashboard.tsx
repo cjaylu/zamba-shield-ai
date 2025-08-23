@@ -1,116 +1,179 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import ThreatCard from "@/components/ThreatCard";
-import ThreatChart from "@/components/ThreatChart";
-import { Shield, AlertTriangle, Mail, MessageSquare, Server, Users } from "lucide-react";
+import ThreatActivityFeed from "@/components/ThreatActivityFeed";
+import SecurityStatusIndicator from "@/components/SecurityStatusIndicator";
+import ThreatAnalyticsDashboard from "@/components/ThreatAnalyticsDashboard";
+import LiveThreatDetection from "@/components/LiveThreatDetection";
+import { useRealTimeThreats } from "@/hooks/useRealTimeThreats";
+import { useAuth } from "@/hooks/useAuth";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Shield, RefreshCw, Activity, Zap } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
-  const threatData = [
-    { name: "Jan", threats: 45 },
-    { name: "Feb", threats: 52 },
-    { name: "Mar", threats: 48 },
-    { name: "Apr", threats: 61 },
-    { name: "May", threats: 55 },
-    { name: "Jun", threats: 67 },
-  ];
+  const { user } = useAuth();
+  const { threats, stats, isLoading, refetch } = useRealTimeThreats();
+  const [isMonitoring, setIsMonitoring] = useState(true);
+  const [lastRefresh, setLastRefresh] = useState(new Date());
 
-  const emailData = [
-    { name: "Jan", emails: 1200 },
-    { name: "Feb", emails: 1100 },
-    { name: "Mar", emails: 1300 },
-    { name: "Apr", emails: 1450 },
-    { name: "May", emails: 1350 },
-    { name: "Jun", emails: 1500 },
-  ];
+  // Determine threat level based on recent threats
+  const getThreatLevel = () => {
+    const recentThreats = threats.filter(threat => {
+      const threatTime = new Date(threat.timestamp);
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      return threatTime > oneDayAgo;
+    });
+
+    const criticalThreats = recentThreats.filter(t => t.severity === 'critical').length;
+    const highThreats = recentThreats.filter(t => t.severity === 'high').length;
+
+    if (criticalThreats > 0) return 'critical';
+    if (highThreats > 2) return 'high';
+    if (recentThreats.length > 5) return 'medium';
+    return 'low';
+  };
+
+  const handleRefresh = async () => {
+    await refetch();
+    setLastRefresh(new Date());
+    toast({
+      title: "Dashboard Updated",
+      description: "Latest threat data has been loaded",
+    });
+  };
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetch();
+      setLastRefresh(new Date());
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [refetch]);
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto py-8 px-4">
+          <Card className="bg-gradient-card shadow-card border-border/50">
+            <CardContent className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-foreground font-medium">Please sign in to access your security dashboard</p>
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="container mx-auto py-8 px-4">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Security Dashboard</h1>
-          <p className="text-muted-foreground">Real-time cybersecurity monitoring and threat analysis</p>
+      <main className="container mx-auto py-8 px-4 space-y-8">
+        {/* Header Section */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
+              Security Command Center
+            </h1>
+            <p className="text-muted-foreground flex items-center gap-2">
+              Real-time cybersecurity monitoring and threat analysis
+              <Badge variant="outline" className="ml-2">
+                <Activity className="h-3 w-3 mr-1" />
+                Live
+              </Badge>
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">Last updated</p>
+              <p className="text-sm font-medium">{lastRefresh.toLocaleTimeString()}</p>
+            </div>
+            <Button onClick={handleRefresh} variant="outline" size="sm" disabled={isLoading}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Security Status Indicators */}
+        <SecurityStatusIndicator
+          isMonitoring={isMonitoring}
+          threatLevel={getThreatLevel()}
+          threatsBlocked={stats.threats_blocked}
+          systemsProtected={12}
+        />
+
+        {/* Main Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <ThreatCard
-            title="Threats Blocked"
-            count={1247}
-            type="critical"
+            title="Threats Detected"
+            count={stats.total_threats}
+            type={stats.total_threats > 10 ? "critical" : stats.total_threats > 5 ? "warning" : "safe"}
             icon="brute-force"
-            description="This month"
+            description="Real-time monitoring"
           />
           <ThreatCard
             title="Emails Scanned"
-            count={15642}
+            count={stats.emails_scanned}
             type="safe"
             icon="email"
-            description="Last 24 hours"
+            description="Automated protection"
           />
           <ThreatCard
             title="SMS Filtered"
-            count={892}
-            type="warning"
+            count={stats.sms_filtered}
+            type={stats.sms_filtered > 5 ? "warning" : "safe"}
             icon="sms"
-            description="This week"
+            description="Mobile security"
           />
           <ThreatCard
-            title="Systems Protected"
-            count={12}
+            title="Threats Blocked"
+            count={stats.threats_blocked}
             type="safe"
             icon="general"
-            description="Active monitoring"
+            description="Active defense"
           />
         </div>
 
-        {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <ThreatChart
-            title="Threat Detection Trends"
-            data={threatData}
-            type="line"
-            dataKey="threats"
-            color="hsl(var(--chart-1))"
-          />
-          <ThreatChart
-            title="Email Processing Volume"
-            data={emailData}
-            type="bar"
-            dataKey="emails"
-            color="hsl(var(--chart-2))"
-          />
+        {/* Analytics Dashboard */}
+        <ThreatAnalyticsDashboard threats={threats} stats={stats} />
+
+        {/* Real-time Activity Feed and Live Detection */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ThreatActivityFeed threats={threats} isLoading={isLoading} />
+          <LiveThreatDetection />
         </div>
 
-        {/* Recent Activity */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Recent Security Events
+        {/* System Performance */}
+        <Card className="bg-gradient-card shadow-card border-border/50">
+          <CardHeader className="bg-gradient-primary rounded-t-lg">
+            <CardTitle className="flex items-center gap-2 text-primary-foreground">
+              <Zap className="h-5 w-5" />
+              System Performance
             </CardTitle>
-            <CardDescription>Latest detected threats and system activities</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[
-                { time: "2 minutes ago", event: "Phishing email blocked", severity: "high" },
-                { time: "15 minutes ago", event: "Brute force attempt detected", severity: "critical" },
-                { time: "1 hour ago", event: "Suspicious SMS filtered", severity: "medium" },
-                { time: "3 hours ago", event: "System scan completed", severity: "low" },
-              ].map((item, index) => (
-                <div key={index} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-                  <div className="flex items-center gap-3">
-                    <Badge variant={item.severity === "critical" ? "destructive" : item.severity === "high" ? "destructive" : item.severity === "medium" ? "secondary" : "outline"}>
-                      {item.severity}
-                    </Badge>
-                    <span className="text-sm">{item.event}</span>
-                  </div>
-                  <span className="text-xs text-muted-foreground">{item.time}</span>
-                </div>
-              ))}
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-success mb-2">99.9%</div>
+                <p className="text-sm text-muted-foreground">Uptime</p>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-primary mb-2">&lt;100ms</div>
+                <p className="text-sm text-muted-foreground">Response Time</p>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-accent mb-2">24/7</div>
+                <p className="text-sm text-muted-foreground">Monitoring</p>
+              </div>
             </div>
           </CardContent>
         </Card>
